@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  name            String?
+  stripeAccountId String?
+  shops           Shop[]
+  orders          Order[]   @relation("BuyerOrders", fields: [email], references: [buyerEmail])
+  createdAt       DateTime  @default(now())
+  sessions        Session[]
+  accounts        Account[]
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  expires      DateTime
+}
+
+model Account {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
+  type              String
+  provider          String
+  providerAccountId String
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  refresh_token     String?
+}
+
+model Shop {
+  id        String   @id @default(cuid())
+  name      String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  ownerId   String
+  items     Item[]
+  createdAt DateTime @default(now())
+}
+
+model Item {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  price       Int      // in cents
+  shop        Shop     @relation(fields: [shopId], references: [id])
+  shopId      String
+  orders      Order[]
+  createdAt   DateTime @default(now())
+}
+
+model Order {
+  id          String   @id @default(cuid())
+  item        Item     @relation(fields: [itemId], references: [id])
+  itemId      String
+  buyerEmail  String
+  status      String   @default("pending")
+  receiptUrl  String?
+  downloadUrl String?
+  createdAt   DateTime @default(now())
+
+  buyer       User?    @relation("BuyerOrders", fields: [buyerEmail], references: [email])
+}
